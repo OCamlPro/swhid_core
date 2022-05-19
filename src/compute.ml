@@ -33,7 +33,7 @@ struct
 
   module Git = struct
     let target_type_to_git = function
-      | Types.Object_type.Content _hash_type -> "blob"
+      | Object.Type.Content _hash_type -> "blob"
       | Directory -> "tree"
       | Release -> "tag"
       | Revision -> "commit"
@@ -47,15 +47,15 @@ struct
           Char.chr @@ int_of_string @@ "0x" ^ s )
 
     let object_to_swhid (obj : string) object_type =
-      let scheme = Types.Scheme_version.default in
+      let scheme = Object.Scheme_version.default in
       let hash = SHA1.digest_string_to_hex obj in
-      match Types.Object_hash.of_string hash with
+      match Object.Hash.of_string hash with
       | Error _msg as e -> e
       | Ok hash ->
         let core_identifier =
-          Types.Object_core_identifier.mk scheme object_type hash
+          Object.Core_identifier.mk scheme object_type hash
         in
-        Ok (Types.mk core_identifier [])
+        Ok (Object.mk core_identifier [])
 
     let object_header fmt (git_type, len) =
       match git_type with
@@ -111,7 +111,7 @@ struct
     { typ : directory_entry_kind
     ; permissions : int
     ; name : string
-    ; target : Types.Object_core_identifier.t
+    ; target : Object.Core_identifier.t
     }
 
   (** The type for dates, needed to compute releases and revisions identifiers. *)
@@ -127,7 +127,7 @@ struct
       E.g. [content_identifier "_build\n"] is the swhid of this library's
       [.gitignore] file. *)
   let content_identifier content =
-    let typ = Types.Object_type.Content "sha1_git" in
+    let typ = Object.Type.Content "sha1_git" in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
@@ -161,11 +161,11 @@ struct
            (fun fmt entry ->
              Format.fprintf fmt "%o %s%c%s" entry.permissions entry.name '\x00'
                (Git.id_to_bytes
-                  ( Types.Object_hash.to_string
-                  @@ Types.Object_core_identifier.get_hash entry.target ) ) ) )
+                  ( Object.Hash.to_string
+                  @@ Object.Core_identifier.get_hash entry.target ) ) ) )
         entries
     in
-    let typ = Types.Object_type.Directory in
+    let typ = Object.Type.Directory in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
@@ -195,7 +195,7 @@ struct
             match (typ, permissions, target) with
             | Some typ, Some permissions, Ok target ->
               let name = OS.base name in
-              let target = Types.get_core target in
+              let target = Object.get_core target in
               Ok { typ; permissions; target; name }
             | _ -> Error "can't compute directory deep identifier" )
           contents
@@ -240,7 +240,7 @@ struct
 
     let content = Buffer.contents buff in
 
-    let typ = Types.Object_type.Release in
+    let typ = Object.Type.Release in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
@@ -288,7 +288,7 @@ struct
 
     let content = Buffer.contents buff in
 
-    let typ = Types.Object_type.Revision in
+    let typ = Object.Type.Revision in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
@@ -329,5 +329,5 @@ struct
     let content = Buffer.contents buff in
 
     let git_object = Git.object_from_contents_strtarget "snapshot" content in
-    Git.object_to_swhid git_object Types.Object_type.Snapshot
+    Git.object_to_swhid git_object Object.Type.Snapshot
 end

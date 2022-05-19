@@ -16,7 +16,7 @@ module Scheme_version = struct
   let default = 1
 end
 
-module Object_type = struct
+module Type = struct
   (** The kinds of objects represented by swhids, see the
       {{:https://docs.softwareheritage.org/devel/swh-model/data-model.html#software-artifacts}
       software heritage model documentation}. *)
@@ -48,7 +48,7 @@ module Object_type = struct
   let pp fmt v = Format.fprintf fmt "%s" (to_string v)
 end
 
-module Object_hash = struct
+module Hash = struct
   type t = string
 
   let of_string s =
@@ -65,16 +65,16 @@ module Object_hash = struct
   let pp fmt v = Format.fprintf fmt "%s" v
 end
 
-module Object_core_identifier = struct
-  type t = Scheme_version.t * Object_type.t * Object_hash.t
+module Core_identifier = struct
+  type t = Scheme_version.t * Type.t * Hash.t
 
   let of_string s =
     match String.split_on_char ':' s with
     | [ "swh"; "1"; t; hash ] -> begin
-      match Object_type.of_string t with
+      match Type.of_string t with
       | Error _msg as e -> e
       | Ok t -> begin
-        match Object_hash.of_string hash with
+        match Hash.of_string hash with
         | Error _msg as e -> e
         | Ok hash ->
           let scheme = Scheme_version.default in
@@ -86,8 +86,8 @@ module Object_core_identifier = struct
   let mk scheme typ hash = (scheme, typ, hash)
 
   let pp fmt (scheme, typ, hash) =
-    Format.fprintf fmt "swh:%a:%a:%a" Scheme_version.pp scheme Object_type.pp
-      typ Object_hash.pp hash
+    Format.fprintf fmt "swh:%a:%a:%a" Scheme_version.pp scheme Type.pp typ
+      Hash.pp hash
 
   let to_string v = Format.asprintf "%a" pp v
 
@@ -103,7 +103,7 @@ module Qualifier = struct
       {{:https://docs.softwareheritage.org/devel/swh-model/persistent-identifiers.html#qualifiers}
       swh documentation about qualifiers}.*)
   type t =
-    | Anchor of Object_core_identifier.t
+    | Anchor of Core_identifier.t
         (** a designated node in the Merkle DAG relative to which a path to the
             object is specified, as the core identifier of a directory, a
             revision, a release or a snapshot *)
@@ -117,7 +117,7 @@ module Qualifier = struct
             is uniquely determined; when the anchor denotes a snapshot, the root
             directory is the one pointed to by HEAD (possibly indirectly), and
             undefined if such a reference is missing *)
-    | Visit of Object_core_identifier.t
+    | Visit of Core_identifier.t
         (** the core identifier of a snapshot corresponding to a specific visit
             of a repository containing the designated object *)
     | Fragment of (int * int option)
@@ -149,21 +149,21 @@ module Qualifier = struct
       Ok (Origin url)
     | "visit" :: id -> (
       let id = String.concat "" id in
-      match Object_core_identifier.of_string id with
+      match Core_identifier.of_string id with
       | Error _msg as e -> e
       | Ok id -> Ok (Visit id) )
     | "anchor" :: id -> (
       let id = String.concat "" id in
-      match Object_core_identifier.of_string id with
+      match Core_identifier.of_string id with
       | Error _msg as e -> e
       | Ok id -> Ok (Anchor id) )
     | _whatever -> Error "invalid qualifier"
 
   let pp fmt = function
-    | Anchor id -> Format.fprintf fmt "anchor=%a" Object_core_identifier.pp id
+    | Anchor id -> Format.fprintf fmt "anchor=%a" Core_identifier.pp id
     | Origin uri -> Format.fprintf fmt "origin=%s" uri
     | Path path -> Format.fprintf fmt "path=%s" path
-    | Visit id -> Format.fprintf fmt "visit=%a" Object_core_identifier.pp id
+    | Visit id -> Format.fprintf fmt "visit=%a" Core_identifier.pp id
     | Fragment (l1, l2) ->
       Format.fprintf fmt "lines=%d" l1;
       Option.iter (fun l2 -> Format.fprintf fmt "-%d" l2) l2
@@ -172,12 +172,12 @@ module Qualifier = struct
 end
 
 (** The type for full swhids. *)
-type t = Object_core_identifier.t * Qualifier.t list
+type t = Core_identifier.t * Qualifier.t list
 
 let of_string s =
   match String.split_on_char ';' s with
   | id :: qualifiers -> begin
-    match Object_core_identifier.of_string id with
+    match Core_identifier.of_string id with
     | Error _msg as e -> e
     | Ok object_core_identifier -> begin
       let qualifiers = List.map Qualifier.of_string qualifiers in
@@ -202,6 +202,6 @@ let pp_qualifiers fmt q = List.iter (Format.fprintf fmt ";%a" Qualifier.pp) q
 let pp fmt id =
   let i = get_core id in
   let q = get_qualifiers id in
-  Format.fprintf fmt "%a%a" Object_core_identifier.pp i pp_qualifiers q
+  Format.fprintf fmt "%a%a" Core_identifier.pp i pp_qualifiers q
 
 let to_string id = Format.asprintf "%a" pp id

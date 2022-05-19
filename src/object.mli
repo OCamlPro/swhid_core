@@ -12,7 +12,7 @@ module Scheme_version : sig
   val default : t
 end
 
-module Object_type : sig
+module Type : sig
   type t =
     | Content of string
     | Directory
@@ -27,7 +27,7 @@ module Object_type : sig
   val to_string : t -> string
 end
 
-module Object_hash : sig
+module Hash : sig
   type t
 
   val of_string : string -> (t, string) Result.t
@@ -37,12 +37,12 @@ module Object_hash : sig
   val to_string : t -> string
 end
 
-module Object_core_identifier : sig
+module Core_identifier : sig
   type t
 
   val of_string : string -> (t, string) Result.t
 
-  val mk : Scheme_version.t -> Object_type.t -> Object_hash.t -> t
+  val mk : Scheme_version.t -> Type.t -> Hash.t -> t
 
   val pp : Format.formatter -> t -> unit
 
@@ -50,17 +50,17 @@ module Object_core_identifier : sig
 
   val get_scheme : t -> Scheme_version.t
 
-  val get_type : t -> Object_type.t
+  val get_type : t -> Type.t
 
-  val get_hash : t -> Object_hash.t
+  val get_hash : t -> Hash.t
 end
 
 module Qualifier : sig
   type t =
-    | Anchor of Object_core_identifier.t
+    | Anchor of Core_identifier.t
     | Origin of string
     | Path of string
-    | Visit of Object_core_identifier.t
+    | Visit of Core_identifier.t
     | Fragment of (int * int option)
 
   val of_string : string -> (t, string) Result.t
@@ -74,9 +74,9 @@ type t
 
 val of_string : string -> (t, string) Result.t
 
-val mk : Object_core_identifier.t -> Qualifier.t list -> t
+val mk : Core_identifier.t -> Qualifier.t list -> t
 
-val get_core : t -> Object_core_identifier.t
+val get_core : t -> Core_identifier.t
 
 val get_qualifiers : t -> Qualifier.t list
 
