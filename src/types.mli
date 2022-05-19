@@ -7,6 +7,8 @@ module Scheme_version : sig
 
   val to_int : t -> int
 
+  val pp : Format.formatter -> t -> unit
+
   val default : t
 end
 
@@ -19,12 +21,18 @@ module Object_type : sig
     | Snapshot
 
   val of_string : string -> (t, string) Result.t
+
+  val pp : Format.formatter -> t -> unit
+
+  val to_string : t -> string
 end
 
 module Object_hash : sig
   type t
 
   val of_string : string -> (t, string) Result.t
+
+  val pp : Format.formatter -> t -> unit
 
   val to_string : t -> string
 end
@@ -35,6 +43,8 @@ module Object_core_identifier : sig
   val of_string : string -> (t, string) Result.t
 
   val mk : Scheme_version.t -> Object_type.t -> Object_hash.t -> t
+
+  val pp : Format.formatter -> t -> unit
 
   val to_string : t -> string
 
@@ -54,6 +64,10 @@ module Qualifier : sig
     | Fragment of (int * int option)
 
   val of_string : string -> (t, string) Result.t
+
+  val pp : Format.formatter -> t -> unit
+
+  val to_string : t -> string
 end
 
 type t
@@ -65,3 +79,7 @@ val mk : Object_core_identifier.t -> Qualifier.t list -> t
 val get_core : t -> Object_core_identifier.t
 
 val get_qualifiers : t -> Qualifier.t list
+
+val pp : Format.formatter -> t -> unit
+
+val to_string : t -> string

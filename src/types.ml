@@ -11,6 +11,8 @@ module Scheme_version = struct
 
   let to_int = Fun.id
 
+  let pp fmt v = Format.fprintf fmt "%d" v
+
   let default = 1
 end
 
@@ -42,6 +44,8 @@ module Object_type = struct
     | Release -> "rel"
     | Revision -> "rev"
     | Snapshot -> "snp"
+
+  let pp fmt v = Format.fprintf fmt "%s" (to_string v)
 end
 
 module Object_hash = struct
@@ -57,6 +61,8 @@ module Object_hash = struct
     with Exit -> Error (Format.sprintf "invalid object hash `%s`" s)
 
   let to_string = Fun.id
+
+  let pp fmt v = Format.fprintf fmt "%s" v
 end
 
 module Object_core_identifier = struct
@@ -79,11 +85,11 @@ module Object_core_identifier = struct
 
   let mk scheme typ hash = (scheme, typ, hash)
 
-  let to_string (scheme, typ, hash) =
-    Format.sprintf "swh:%d:%s:%s"
-      (Scheme_version.to_int scheme)
-      (Object_type.to_string typ)
-      (Object_hash.to_string hash)
+  let pp fmt (scheme, typ, hash) =
+    Format.fprintf fmt "swh:%a:%a:%a" Scheme_version.pp scheme Object_type.pp
+      typ Object_hash.pp hash
+
+  let to_string v = Format.asprintf "%a" pp v
 
   let get_scheme (scheme, _typ, _hash) = scheme
 
@@ -152,6 +158,17 @@ module Qualifier = struct
       | Error _msg as e -> e
       | Ok id -> Ok (Anchor id) )
     | _whatever -> Error "invalid qualifier"
+
+  let pp fmt = function
+    | Anchor id -> Format.fprintf fmt "anchor=%a" Object_core_identifier.pp id
+    | Origin uri -> Format.fprintf fmt "origin=%s" uri
+    | Path path -> Format.fprintf fmt "path=%s" path
+    | Visit id -> Format.fprintf fmt "visit=%a" Object_core_identifier.pp id
+    | Fragment (l1, l2) ->
+      Format.fprintf fmt "lines=%d" l1;
+      Option.iter (fun l2 -> Format.fprintf fmt "-%d" l2) l2
+
+  let to_string q = Format.asprintf "%a" pp q
 end
 
 (** The type for full swhids. *)
@@ -179,3 +196,12 @@ let mk object_core_identifier qualifiers = (object_core_identifier, qualifiers)
 let get_core (core, _qualifiers) = core
 
 let get_qualifiers (_core, qualifiers) = qualifiers
+
+let pp_qualifiers fmt q = List.iter (Format.fprintf fmt ";%a" Qualifier.pp) q
+
+let pp fmt id =
+  let i = get_core id in
+  let q = get_qualifiers id in
+  Format.fprintf fmt "%a%a" Object_core_identifier.pp i pp_qualifiers q
+
+let to_string id = Format.asprintf "%a" pp id
