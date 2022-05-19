@@ -55,7 +55,8 @@ module Hash = struct
     let len = ref 0 in
     try
       String.iter
-        (function 'a' .. 'f' -> incr len | _invalid_char -> raise Exit)
+        (function
+          | 'a' .. 'f' | '0' .. '9' -> incr len | _invalid_char -> raise Exit )
         s;
       if !len = 40 then Ok s else raise Exit
     with Exit -> Error (Format.sprintf "invalid object hash `%s`" s)

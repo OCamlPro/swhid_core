@@ -82,7 +82,7 @@ val get_scheme : t -> Scheme_version.t
 
 val get_type : t -> Type.t
 
-val get_hash : t -> Type.t
+val get_hash : t -> Hash.t
 
 val get_qualifiers : t -> Qualifier.t list
 

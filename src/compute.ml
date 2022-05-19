@@ -214,7 +214,7 @@ struct
     let buff = Buffer.create 512 in
     let fmt = Format.formatter_of_buffer buff in
 
-    Format.fprintf fmt "object %s%ctype %s%ctag %s%c" target '\n'
+    Format.fprintf fmt "object %a%ctype %s%ctag %s%c" Object.Hash.pp target '\n'
       (Git.target_type_to_git target_type)
       '\n' (Git.escape_newlines name) '\n';
 
