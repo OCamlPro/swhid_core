@@ -1,0 +1,181 @@
+module Scheme_version = struct
+  type t = int
+
+  let of_string = function
+    | "1" -> Ok 1
+    | invalid -> Error (Format.sprintf "invalid scheme version `%s`" invalid)
+
+  let of_int = function
+    | 1 -> Ok 1
+    | invalid -> Error (Format.sprintf "invalid scheme version `%d`" invalid)
+
+  let to_int = Fun.id
+
+  let default = 1
+end
+
+module Object_type = struct
+  (** The kinds of objects represented by swhids, see the
+      {{:https://docs.softwareheritage.org/devel/swh-model/data-model.html#software-artifacts}
+      software heritage model documentation}. *)
+  type t =
+    | Content of string
+        (** The string parameter is the hash function name used for the
+            computation, defaults to "sha1_git" (in most cases, you don't care
+            about it) *)
+    | Directory
+    | Release
+    | Revision
+    | Snapshot
+
+  let of_string = function
+    | "cnt" -> Ok (Content "sha1_git")
+    | "dir" -> Ok Directory
+    | "rel" -> Ok Release
+    | "rev" -> Ok Revision
+    | "snp" -> Ok Snapshot
+    | invalid -> Error (Format.sprintf "invalid object type `%s`" invalid)
+
+  let to_string = function
+    | Content _f -> "cnt"
+    | Directory -> "dir"
+    | Release -> "rel"
+    | Revision -> "rev"
+    | Snapshot -> "snp"
+end
+
+module Object_hash = struct
+  type t = string
+
+  let of_string s =
+    let len = ref 0 in
+    try
+      String.iter
+        (function 'a' .. 'f' -> incr len | _invalid_char -> raise Exit)
+        s;
+      if !len = 40 then Ok s else raise Exit
+    with Exit -> Error (Format.sprintf "invalid object hash `%s`" s)
+
+  let to_string = Fun.id
+end
+
+module Object_core_identifier = struct
+  type t = Scheme_version.t * Object_type.t * Object_hash.t
+
+  let of_string s =
+    match String.split_on_char ':' s with
+    | [ "swh"; "1"; t; hash ] -> begin
+      match Object_type.of_string t with
+      | Error _msg as e -> e
+      | Ok t -> begin
+        match Object_hash.of_string hash with
+        | Error _msg as e -> e
+        | Ok hash ->
+          let scheme = Scheme_version.default in
+          Ok (scheme, t, hash)
+      end
+    end
+    | _whatever -> Error "invalid core identifier"
+
+  let mk scheme typ hash = (scheme, typ, hash)
+
+  let to_string (scheme, typ, hash) =
+    Format.sprintf "swh:%d:%s:%s"
+      (Scheme_version.to_int scheme)
+      (Object_type.to_string typ)
+      (Object_hash.to_string hash)
+
+  let get_scheme (scheme, _typ, _hash) = scheme
+
+  let get_type (_scheme, typ, _hash) = typ
+
+  let get_hash (_scheme, _typ, hash) = hash
+end
+
+module Qualifier = struct
+  (** See
+      {{:https://docs.softwareheritage.org/devel/swh-model/persistent-identifiers.html#qualifiers}
+      swh documentation about qualifiers}.*)
+  type t =
+    | Anchor of Object_core_identifier.t
+        (** a designated node in the Merkle DAG relative to which a path to the
+            object is specified, as the core identifier of a directory, a
+            revision, a release or a snapshot *)
+    | Origin of string
+        (** the software origin where an object has been found or observed in
+            the wild, as an URI *)
+    | Path of string
+        (** the absolute file path, from the root directory associated to the
+            anchor node, to the object; when the anchor denotes a directory or a
+            revision, and almost always when it’s a release, the root directory
+            is uniquely determined; when the anchor denotes a snapshot, the root
+            directory is the one pointed to by HEAD (possibly indirectly), and
+            undefined if such a reference is missing *)
+    | Visit of Object_core_identifier.t
+        (** the core identifier of a snapshot corresponding to a specific visit
+            of a repository containing the designated object *)
+    | Fragment of (int * int option)
+        (** or a fragment (a line number or two) *)
+
+  let of_string s =
+    match String.split_on_char '=' s with
+    | "lines" :: lines -> begin
+      match String.split_on_char '-' (String.concat "" lines) with
+      | [ l1 ] -> begin
+        match int_of_string_opt l1 with
+        | None -> Error "invalid qualifier"
+        | Some i -> Ok (Fragment (i, None))
+      end
+      | [ l1; l2 ] -> begin
+        match (int_of_string_opt l1, int_of_string_opt l2) with
+        | Some i1, Some i2 -> Ok (Fragment (i1, Some i2))
+        | _, _ -> Error "invalid qualifier"
+      end
+      | _whatever -> Error "invalid qualifier"
+    end
+    | "path" :: path ->
+      (* TODO: check RFC 3987 IRI compliance *)
+      let path = String.concat "" path in
+      Ok (Path path)
+    | "origin" :: url ->
+      (* TODO: check RFC 3987 absolute path compliance *)
+      let url = String.concat "" url in
+      Ok (Origin url)
+    | "visit" :: id -> (
+      let id = String.concat "" id in
+      match Object_core_identifier.of_string id with
+      | Error _msg as e -> e
+      | Ok id -> Ok (Visit id) )
+    | "anchor" :: id -> (
+      let id = String.concat "" id in
+      match Object_core_identifier.of_string id with
+      | Error _msg as e -> e
+      | Ok id -> Ok (Anchor id) )
+    | _whatever -> Error "invalid qualifier"
+end
+
+(** The type for full swhids. *)
+type t = Object_core_identifier.t * Qualifier.t list
+
+let of_string s =
+  match String.split_on_char ';' s with
+  | id :: qualifiers -> begin
+    match Object_core_identifier.of_string id with
+    | Error _msg as e -> e
+    | Ok object_core_identifier -> begin
+      let qualifiers = List.map Qualifier.of_string qualifiers in
+      match List.find_opt Result.is_error qualifiers with
+      | Some (Error _msg as e) -> e
+      | Some _ -> assert false
+      | None ->
+        let qualifiers = List.map Result.get_ok qualifiers in
+        Ok (object_core_identifier, qualifiers)
+    end
+  end
+  | _whatever -> Error "invalid swhid"
+
+let mk object_core_identifier qualifiers = (object_core_identifier, qualifiers)
+
+let get_core (core, _qualifiers) = core
+
+let get_qualifiers (_core, qualifiers) = qualifiers

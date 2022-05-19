@@ -1,3 +1,3 @@
-(executable
- (name swhid_core)
- (modules swhid_core))
+(library
+ (public_name swhid_core)
+ (modules compute types))
