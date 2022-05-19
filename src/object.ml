@@ -195,6 +195,12 @@ let mk object_core_identifier qualifiers = (object_core_identifier, qualifiers)
 
 let get_core (core, _qualifiers) = core
 
+let get_scheme (core, _qualifiers) = Core_identifier.get_scheme core
+
+let get_type (core, _qualifiers) = Core_identifier.get_type core
+
+let get_hash (core, _qualifiers) = Core_identifier.get_hash core
+
 let get_qualifiers (_core, qualifiers) = qualifiers
 
 let pp_qualifiers fmt q = List.iter (Format.fprintf fmt ";%a" Qualifier.pp) q

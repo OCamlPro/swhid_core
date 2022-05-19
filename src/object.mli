@@ -78,6 +78,12 @@ val mk : Core_identifier.t -> Qualifier.t list -> t
 
 val get_core : t -> Core_identifier.t
 
+val get_scheme : t -> Scheme_version.t
+
+val get_type : t -> Type.t
+
+val get_hash : t -> Type.t
+
 val get_qualifiers : t -> Qualifier.t list
 
 val pp : Format.formatter -> t -> unit
