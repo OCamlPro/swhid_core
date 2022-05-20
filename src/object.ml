@@ -46,6 +46,8 @@ module Type = struct
     | Release, _ -> 1
     | _, Release -> -1
 
+  let equal t t' = compare t t' = 0
+
   let of_string = function
     | "cnt" -> Ok (Content "sha1_git")
     | "dir" -> Ok Directory
@@ -68,6 +70,7 @@ module Hash = struct
   type t = string
 
   let compare = String.compare
+  let equal = String.equal
 
   let of_string s =
     let len = ref 0 in
@@ -93,6 +96,8 @@ module Core_identifier = struct
       let object_type = Type.compare object_type object_type' in
       if object_type <> 0 then object_type else
         Hash.compare hash hash'
+
+  let equal t t' = compare t t' = 0
 
   let of_string s =
     match String.split_on_char ':' s with

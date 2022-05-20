@@ -22,6 +22,8 @@ module Type : sig
 
   val compare : t -> t -> int
 
+  val equal : t -> t -> bool
+
   val of_string : string -> (t, string) Result.t
 
   val pp : Format.formatter -> t -> unit
@@ -34,6 +36,8 @@ module Hash : sig
 
   val compare : t -> t -> int
 
+  val equal : t -> t -> bool
+
   val of_string : string -> (t, string) Result.t
 
   val pp : Format.formatter -> t -> unit
@@ -45,6 +49,8 @@ module Core_identifier : sig
   type t
 
   val compare : t -> t -> int
+
+  val equal : t -> t -> bool
 
   val of_string : string -> (t, string) Result.t
 
