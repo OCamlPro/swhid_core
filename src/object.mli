@@ -20,6 +20,8 @@ module Type : sig
     | Revision
     | Snapshot
 
+  val compare : t -> t -> int
+
   val of_string : string -> (t, string) Result.t
 
   val pp : Format.formatter -> t -> unit
@@ -30,6 +32,8 @@ end
 module Hash : sig
   type t
 
+  val compare : t -> t -> int
+
   val of_string : string -> (t, string) Result.t
 
   val pp : Format.formatter -> t -> unit
@@ -39,6 +43,8 @@ end
 
 module Core_identifier : sig
   type t
+
+  val compare : t -> t -> int
 
   val of_string : string -> (t, string) Result.t
 
