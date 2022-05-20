@@ -30,6 +30,22 @@ module Type = struct
     | Revision
     | Snapshot
 
+  let compare t t' =
+  match t, t' with
+    | Directory, Directory
+    | Release, Release
+    | Revision, Revision
+    | Snapshot, Snapshot -> 0
+    | Content c, Content c' -> String.compare c c'
+    | Content _, _ -> 1
+    | _, Content _ -> -1
+    | Directory, _ -> 1
+    | _, Directory -> -1
+    | Revision, _ -> 1
+    | _, Revision -> -1
+    | Release, _ -> 1
+    | _, Release -> -1
+
   let of_string = function
     | "cnt" -> Ok (Content "sha1_git")
     | "dir" -> Ok Directory
@@ -51,6 +67,8 @@ end
 module Hash = struct
   type t = string
 
+  let compare = String.compare
+
   let of_string s =
     let len = ref 0 in
     try
@@ -68,6 +86,13 @@ end
 
 module Core_identifier = struct
   type t = Scheme_version.t * Type.t * Hash.t
+
+  let compare (sch_version, object_type, hash) (sch_version', object_type', hash') =
+    let scheme_version = sch_version - sch_version' in
+    if scheme_version <> 0 then scheme_version else
+      let object_type = Type.compare object_type object_type' in
+      if object_type <> 0 then object_type else
+        Hash.compare hash hash'
 
   let of_string s =
     match String.split_on_char ':' s with
