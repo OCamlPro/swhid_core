@@ -6,28 +6,22 @@
 
 (license ISC)
 
-(authors "Léo Andrès <contact@ndrs.fr>")
+(authors "Léo Andrès <contact@ndrs.fr>, Dario Pinto <dario.pinto@ocamlpro.com>")
 
 (maintainers "Léo Andrès <contact@ndrs.fr>")
 
 (source
- (uri git+https://git.zapashcanon.fr/zapashcanon/swhid_core.git))
-
-(homepage https://git.zapashcanon.fr/zapashcanon/swhid_core)
-
-(bug_reports https://git.zapashcanon.fr/zapashcanon/swhid_core/issues)
-
-(documentation https://doc.zapashcanon.fr/swhid_core)
+ (github ocamlpro/swhid_core))
 
 (generate_opam_files true)
 
 (package
  (name swhid_core)
- (synopsis "OCaml library/executable to TODO")
+ (synopsis "OCaml library to work with swhids.")
  (description
-  "swhid_core is an OCaml library/executable to TODO.")
+  "swhid_core is an OCaml library to with with Software Heritage persistent identifiers (swhids). This is the core library, for most use cases you should use the swhid library instead.")
  (tags
-  (swhid_core TODO TODO TODO TODO))
+  (swhid_core swhid swh persistent identifiers hash software heritage archive))
  (depends
   (ocaml
    (>= 4.08))))

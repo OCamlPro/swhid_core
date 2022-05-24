@@ -16,7 +16,7 @@ module Scheme_version = struct
   let default = 1
 end
 
-module Type = struct
+module Kind = struct
   (** The kinds of objects represented by swhids, see the
       {{:https://docs.softwareheritage.org/devel/swh-model/data-model.html#software-artifacts}
       software heritage model documentation}. *)
@@ -54,7 +54,7 @@ module Type = struct
     | "rel" -> Ok Release
     | "rev" -> Ok Revision
     | "snp" -> Ok Snapshot
-    | invalid -> Error (Format.sprintf "invalid object type `%s`" invalid)
+    | invalid -> Error (Format.sprintf "invalid object kind `%s`" invalid)
 
   let to_string = function
     | Content _f -> "cnt"
@@ -88,7 +88,7 @@ module Hash = struct
 end
 
 module Core_identifier = struct
-  type t = Scheme_version.t * Type.t * Hash.t
+  type t = Scheme_version.t * Kind.t * Hash.t
 
   let compare (sch_version, object_type, hash) (sch_version', object_type', hash') =
     let scheme_version = sch_version - sch_version' in
@@ -102,7 +102,7 @@ module Core_identifier = struct
   let of_string s =
     match String.split_on_char ':' s with
     | [ "swh"; "1"; t; hash ] -> begin
-      match Type.of_string t with
+      match Kind.of_string t with
       | Error _msg as e -> e
       | Ok t -> begin
         match Hash.of_string hash with
@@ -117,16 +117,16 @@ module Core_identifier = struct
   let mk scheme typ hash = (scheme, typ, hash)
 
   let pp fmt (scheme, typ, hash) =
-    Format.fprintf fmt "swh:%a:%a:%a" Scheme_version.pp scheme Type.pp typ
+    Format.fprintf fmt "swh:%a:%a:%a" Scheme_version.pp scheme Kind.pp typ
       Hash.pp hash
 
   let to_string v = Format.asprintf "%a" pp v
 
-  let get_scheme (scheme, _typ, _hash) = scheme
+  let get_scheme (scheme, _kind, _hash) = scheme
 
-  let get_type (_scheme, typ, _hash) = typ
+  let get_kind (_scheme, kind, _hash) = kind
 
-  let get_hash (_scheme, _typ, hash) = hash
+  let get_hash (_scheme, _kind, hash) = hash
 end
 
 module Qualifier = struct
@@ -228,7 +228,7 @@ let get_core (core, _qualifiers) = core
 
 let get_scheme (core, _qualifiers) = Core_identifier.get_scheme core
 
-let get_type (core, _qualifiers) = Core_identifier.get_type core
+let get_kind (core, _qualifiers) = Core_identifier.get_kind core
 
 let get_hash (core, _qualifiers) = Core_identifier.get_hash core
 

@@ -3,37 +3,22 @@ type directory_entry_kind =
   | Dir
 
 module Make (SHA1 : sig
-  (** [digest_string_to_hex s] computes the SHA1 hash of [s] and returns its
-      hexadecimal representation. *)
   val digest_string_to_hex : string -> string
 end) (OS : sig
-  (** [contents dir] returns the list of files in the directory [dir]. *)
   val contents : string -> string list option
 
-  (** [type file] returns [Dir] if [file] is a directory and [File] otherwise. *)
   val typ : string -> directory_entry_kind option
 
-  (** [read_file f] returns the content of the file [f]. *)
   val read_file : string -> string option
 
-  (** [permissions f] returns the 16-bit file mode (as stored by Git) of the
-      file [f]. That is:
-
-      - [0o120000] if [f] is a symlink
-      - [0o040000] if [f] is a directory
-      - [0o100755] if [f] is an executable file
-      - [0o100644] if [f] is a regular file *)
   val permissions : string -> int option
 
-  (** [base f] is the basename of file [f]. *)
   val base : string -> string
 end) =
 struct
-  (**/**)
-
   module Git = struct
     let target_type_to_git = function
-      | Object.Type.Content _hash_type -> "blob"
+      | Object.Kind.Content _hash_type -> "blob"
       | Directory -> "tree"
       | Release -> "tag"
       | Revision -> "commit"
@@ -95,18 +80,6 @@ struct
           (tz_offset, negative_utc)
   end
 
-  (**/**)
-
-  (** This module provides various functions to compute the swhid of a given
-      object. Supported objects are [content], [directory], [release],
-      [revision] and [snapshot]. The origins and visits objects are not
-      supported. To learn more about the different object types and identifiers
-      see the
-      {{:https://docs.softwareheritage.org/devel/swh-model/data-model.html#software-artifacts}
-      software heritage documentation}.*)
-
-  (** The type for directory entries list, needed to compute directories
-      identifiers. *)
   type directory_entry =
     { typ : directory_entry_kind
     ; permissions : int
@@ -114,37 +87,17 @@ struct
     ; target : Object.Core_identifier.t
     }
 
-  (** The type for dates, needed to compute releases and revisions identifiers. *)
   type date =
     { timestamp : Int64.t
     ; tz_offset : int
     ; negative_utc : bool
     }
 
-  (** [content_identifier s] computes the swhid for the [s] content. [s] is the
-      raw content of a file as a [string].
-
-      E.g. [content_identifier "_build\n"] is the swhid of this library's
-      [.gitignore] file. *)
   let content_identifier content =
-    let typ = Object.Type.Content "sha1_git" in
+    let typ = Object.Kind.Content "sha1_git" in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
-  (** [directory_identifier entries] compute the swhid for the [entries]
-      directory. [entries] is a list of [Types.directory_entry] where each
-      element points to another object (usually a file content or a
-      sub-directory).
-
-      E.g.
-      [directory_identifier \[ { typ = "file"
-                                 ; permissions = 33188
-                                 ; name = "README"
-                                 ; target = "37ec8ea2110c0b7a32fbb0e872f6e7debbf95e21"
-                                 }\]]
-      is the swhid of a directory which has a single file [README] with
-      permissions 33188 and whose core identifier from [content_identifier] is
-      [37ec8ea2110c0b7a32fbb0e872f6e7debbf95e21]. *)
   let directory_identifier entries =
     let entries =
       List.sort
@@ -165,13 +118,10 @@ struct
                   @@ Object.Core_identifier.get_hash entry.target ) ) ) )
         entries
     in
-    let typ = Object.Type.Directory in
+    let typ = Object.Kind.Directory in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
-  (** [directory_identifier_deep] compute the swhid for a given directory name,
-      it uses the various functions provided in the [OS] module parameter to
-      list directory contents, get file permissions and read file contents.*)
   let rec directory_identifier_deep name =
     match OS.contents name with
     | None -> Error (Format.sprintf "can't get contents of `%s`" name)
@@ -205,12 +155,7 @@ struct
       | Some _ -> assert false
       | None -> directory_identifier (List.map Result.get_ok entries) )
 
-  (** [release_identifier target target_type name ~author date ~message]
-      computes the swhid for a release object poiting to an object of type
-      [target_type] whose identifier is [target], the release having name
-      [name], author [~author] and has been published on [date] with the release
-      message [~message]. *)
-  let release_identifier target target_type name ~author date ~message =
+  let release_identifier target target_type ~name ~author date ~message =
     let buff = Buffer.create 512 in
     let fmt = Format.formatter_of_buffer buff in
 
@@ -240,24 +185,19 @@ struct
 
     let content = Buffer.contents buff in
 
-    let typ = Object.Type.Release in
+    let typ = Object.Kind.Release in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
-  (** [revision dir parents ~author ~author_date ~committer ~committer_date extra_headers message]
-      computes the swhid for a revision object whose directory has id [dir] and
-      whose parents has ids [parents] which was authored by [~author] on
-      [~author_date] and committed by [~committer] on [~committer_date] with
-      extra headers [extra_headers] and message [message]. *)
   let revision_identifier directory parents ~author ~author_date ~committer
-      ~committer_date extra_headers message =
+      ~committer_date extra_headers ~message =
     let buff = Buffer.create 512 in
     let fmt = Format.formatter_of_buffer buff in
 
-    Format.fprintf fmt "tree %s%c" directory '\n';
+    Format.fprintf fmt "tree %a%c" Object.Hash.pp directory '\n';
 
     List.iter
-      (fun parent -> Format.fprintf fmt "parent %s%c" parent '\n')
+      (fun parent -> Format.fprintf fmt "parent %a%c" Object.Hash.pp parent '\n')
       parents;
 
     Format.fprintf fmt "author %a%c" Git.format_author_data
@@ -288,15 +228,10 @@ struct
 
     let content = Buffer.contents buff in
 
-    let typ = Object.Type.Revision in
+    let typ = Object.Kind.Revision in
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
-  (** [snapshot_identifier branches] computes the swhid of the snapshot made of
-      branches [branches] where [branches] is a list of branch elements. Each
-      branch is of the form [name, target] where [name] is the name of the
-      branch and where [target] is a pair made of the identifier of the branch
-      and its type. *)
   let snapshot_identifier (branches : (string * (string * string) option) list)
       =
     let branches =
@@ -329,5 +264,5 @@ struct
     let content = Buffer.contents buff in
 
     let git_object = Git.object_from_contents_strtarget "snapshot" content in
-    Git.object_to_swhid git_object Object.Type.Snapshot
+    Git.object_to_swhid git_object Object.Kind.Snapshot
 end
