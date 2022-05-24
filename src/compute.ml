@@ -17,7 +17,7 @@ end) (OS : sig
 end) =
 struct
   module Git = struct
-    let target_type_to_git = function
+    let target_kind_to_git = function
       | Object.Kind.Content _hash_type -> "blob"
       | Directory -> "tree"
       | Release -> "tag"
@@ -52,12 +52,12 @@ struct
           (Format.sprintf "invalid git object type `%s` (Git.object_header)"
              git_type )
 
-    let object_from_contents_strtarget target_type contents =
+    let object_from_contents_strtarget target_kind contents =
       let len = String.length contents in
-      Format.asprintf "%a%s" object_header (target_type, len) contents
+      Format.asprintf "%a%s" object_header (target_kind, len) contents
 
-    let object_from_contents target_type contents =
-      object_from_contents_strtarget (target_type_to_git target_type) contents
+    let object_from_contents target_kind contents =
+      object_from_contents_strtarget (target_kind_to_git target_kind) contents
 
     let escape_newlines snippet =
       String.concat "\n " (String.split_on_char '\n' snippet)
@@ -155,12 +155,12 @@ struct
       | Some _ -> assert false
       | None -> directory_identifier (List.map Result.get_ok entries) )
 
-  let release_identifier target target_type ~name ~author date ~message =
+  let release_identifier target target_kind ~name ~author date ~message =
     let buff = Buffer.create 512 in
     let fmt = Format.formatter_of_buffer buff in
 
     Format.fprintf fmt "object %a%ctype %s%ctag %s%c" Object.Hash.pp target '\n'
-      (Git.target_type_to_git target_type)
+      (Git.target_kind_to_git target_kind)
       '\n' (Git.escape_newlines name) '\n';
 
     begin
@@ -243,21 +243,21 @@ struct
     let fmt = Format.formatter_of_buffer buff in
     List.iter
       (fun (branch_name, target) ->
-        let target, target_type, target_id_len =
+        let target, target_kind, target_id_len =
           match target with
           | None -> ("", "dangling", 0)
-          | Some (target, target_type) -> (
-            match target_type with
+          | Some (target, target_kind) -> (
+            match target_kind with
             | "content" | "directory" | "revision" | "release" | "snapshot" ->
-              (Git.id_to_bytes target, target_type, 20)
+              (Git.id_to_bytes target, target_kind, 20)
             | "alias" -> (target, "alias", String.length target)
-            | target_type ->
+            | target_kind ->
               invalid_arg
                 (Format.sprintf
                    "invalid target type: `%s` (Compute.snapshot_identifier)"
-                   target_type ) )
+                   target_kind ) )
         in
-        Format.fprintf fmt "%s %s%c%d:%s" target_type branch_name '\x00'
+        Format.fprintf fmt "%s %s%c%d:%s" target_kind branch_name '\x00'
           target_id_len target )
       branches;
     Format.pp_print_flush fmt ();

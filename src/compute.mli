@@ -84,11 +84,10 @@ end) : sig
       list directory contents, get file permissions and read file contents.*)
   val directory_identifier_deep : string -> (Object.t, string) result
 
-  (** [release_identifier target target_type name ~author date ~message]
-      computes the swhid for a release object poiting to an object of type
-      [target_type] whose identifier is [target], the release having name
-      [~name], author [~author] and has been published on [date] with the
-      release message [~message]. *)
+  (** [release_identifier target target_kind name ~author date ~message]
+      computes the swhid for a release object pointing to an object of type
+      [target_kind] whose identifier is [target], the release having [~name],
+      [~author] and has been published on [date] with the release [~message]. *)
   val release_identifier :
        Object.Hash.t
     -> Object.Kind.t

@@ -43,8 +43,8 @@ module Kind : sig
             function used for the computation, defaults to ["sha1_git"] and in
             most use cases you don't care about it. *)
     | Directory  (** Directories. *)
-    | Release  (** Releases. *)
     | Revision  (** Revisions. *)
+    | Release  (** Releases. *)
     | Snapshot  (** Snapshots. *)
 
   (** [compare x y] returns [0] if [x] is equal to [y], a negative integer if

@@ -17,25 +17,20 @@ module Scheme_version = struct
 end
 
 module Kind = struct
-  (** The kinds of objects represented by swhids, see the
-      {{:https://docs.softwareheritage.org/devel/swh-model/data-model.html#software-artifacts}
-      software heritage model documentation}. *)
   type t =
     | Content of string
-        (** The string parameter is the hash function name used for the
-            computation, defaults to "sha1_git" (in most cases, you don't care
-            about it) *)
     | Directory
-    | Release
     | Revision
+    | Release
     | Snapshot
 
   let compare t t' =
-  match t, t' with
+    match (t, t') with
     | Directory, Directory
     | Release, Release
     | Revision, Revision
-    | Snapshot, Snapshot -> 0
+    | Snapshot, Snapshot ->
+      0
     | Content c, Content c' -> String.compare c c'
     | Content _, _ -> 1
     | _, Content _ -> -1
@@ -70,6 +65,7 @@ module Hash = struct
   type t = string
 
   let compare = String.compare
+
   let equal = String.equal
 
   let of_string s =
@@ -90,12 +86,13 @@ end
 module Core_identifier = struct
   type t = Scheme_version.t * Kind.t * Hash.t
 
-  let compare (sch_version, object_type, hash) (sch_version', object_type', hash') =
+  let compare (sch_version, object_type, hash)
+      (sch_version', object_type', hash') =
     let scheme_version = sch_version - sch_version' in
-    if scheme_version <> 0 then scheme_version else
+    if scheme_version <> 0 then scheme_version
+    else
       let object_type = Type.compare object_type object_type' in
-      if object_type <> 0 then object_type else
-        Hash.compare hash hash'
+      if object_type <> 0 then object_type else Hash.compare hash hash'
 
   let equal t t' = compare t t' = 0
 
@@ -130,29 +127,12 @@ module Core_identifier = struct
 end
 
 module Qualifier = struct
-  (** See
-      {{:https://docs.softwareheritage.org/devel/swh-model/persistent-identifiers.html#qualifiers}
-      swh documentation about qualifiers}.*)
   type t =
     | Anchor of Core_identifier.t
-        (** a designated node in the Merkle DAG relative to which a path to the
-            object is specified, as the core identifier of a directory, a
-            revision, a release or a snapshot *)
     | Origin of string
-        (** the software origin where an object has been found or observed in
-            the wild, as an URI *)
     | Path of string
-        (** the absolute file path, from the root directory associated to the
-            anchor node, to the object; when the anchor denotes a directory or a
-            revision, and almost always when it’s a release, the root directory
-            is uniquely determined; when the anchor denotes a snapshot, the root
-            directory is the one pointed to by HEAD (possibly indirectly), and
-            undefined if such a reference is missing *)
     | Visit of Core_identifier.t
-        (** the core identifier of a snapshot corresponding to a specific visit
-            of a repository containing the designated object *)
     | Fragment of (int * int option)
-        (** or a fragment (a line number or two) *)
 
   let of_string s =
     match String.split_on_char '=' s with
@@ -202,7 +182,6 @@ module Qualifier = struct
   let to_string q = Format.asprintf "%a" pp q
 end
 
-(** The type for full swhids. *)
 type t = Core_identifier.t * Qualifier.t list
 
 let of_string s =
