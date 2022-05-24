@@ -62,11 +62,14 @@ struct
     let escape_newlines snippet =
       String.concat "\n " (String.split_on_char '\n' snippet)
 
+    (* TODO: replace with Int.abs when we have >= 4.08 *)
+    let abs x = if x >= 0 then x else -x
+
     let format_offset fmt (offset, negative_utc) =
       let sign =
         if offset < 0 || (offset = 0 && negative_utc) then "-" else "+"
       in
-      let offset = Int.abs offset in
+      let offset = abs offset in
       let hours = offset / 60 in
       let minutes = offset mod 60 in
       Format.fprintf fmt "%s%02d%02d" sign hours minutes
@@ -122,6 +125,11 @@ struct
     let git_object = Git.object_from_contents typ content in
     Git.object_to_swhid git_object typ
 
+  (* TODO: remove once we have >= 4.05 *)
+  let rec list_find_opt p = function
+    | [] -> None
+    | x :: l -> if p x then Some x else list_find_opt p l
+
   let rec directory_identifier_deep name =
     match OS.contents name with
     | None -> Error (Format.sprintf "can't get contents of `%s`" name)
@@ -150,10 +158,13 @@ struct
             | _ -> Error "can't compute directory deep identifier" )
           contents
       in
-      match List.find_opt Result.is_error entries with
+      match list_find_opt Result.is_error entries with
       | Some (Error _ as e) -> e
       | Some _ -> assert false
       | None -> directory_identifier (List.map Result.get_ok entries) )
+
+  (* TODO: remove once we have >= 4.08 *)
+  let option_map f = function None -> None | Some v -> Some (f v)
 
   let release_identifier target target_kind ~name ~author date ~message =
     let buff = Buffer.create 512 in
@@ -169,7 +180,7 @@ struct
       | Some author ->
         Format.fprintf fmt "tagger %a%c" Git.format_author_data
           ( Git.escape_newlines author
-          , Option.map
+          , option_map
               (fun o -> (o.timestamp, o.tz_offset, o.negative_utc))
               date )
           '\n'
@@ -202,14 +213,14 @@ struct
 
     Format.fprintf fmt "author %a%c" Git.format_author_data
       ( Git.escape_newlines author
-      , Option.map
+      , option_map
           (fun o -> (o.timestamp, o.tz_offset, o.negative_utc))
           author_date )
       '\n';
 
     Format.fprintf fmt "committer %a%c" Git.format_author_data
       ( Git.escape_newlines committer
-      , Option.map
+      , option_map
           (fun o -> (o.timestamp, o.tz_offset, o.negative_utc))
           committer_date )
       '\n';

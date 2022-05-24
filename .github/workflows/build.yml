@@ -2,10 +2,10 @@ name: build
 on:
   pull_request:
     branches:
-      - master
+      - main
   push:
     branches:
-      - master
+      - main
 jobs:
   build:
     strategy:
@@ -19,7 +19,7 @@ jobs:
           - 4.14.0
         include:
           - os: ubuntu-latest
-            ocaml-compiler: 4.08.0
+            ocaml-compiler: 4.04.0
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout

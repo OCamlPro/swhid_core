@@ -14,11 +14,11 @@ module Scheme_version : sig
 
   (** [of_string s] is [Ok v] if [s] is a valid scheme version, otherwise it is
       [Error e]. *)
-  val of_string : string -> (t, string) Result.t
+  val of_string : string -> (t, string) result
 
   (** [of_int n] is [Ok v] if [n] is a valid scheme version, otherwise it is
       [Error e]. *)
-  val of_int : int -> (t, string) Result.t
+  val of_int : int -> (t, string) result
 
   (** [to_int v] is the representation of [v] as an integer. *)
   val to_int : t -> int
@@ -57,7 +57,7 @@ module Kind : sig
   (** [of_string s] is [Ok v] if [s] is a valid kind of object, otherwise it is
       [Error e]. The valid kinds are ["cnt"], ["dir"], ["rel"], ["rev"] and
       ["snp"]. *)
-  val of_string : string -> (t, string) Result.t
+  val of_string : string -> (t, string) result
 
   (** [pp fmt v] prints [v] on formatter [fmt]. *)
   val pp : Format.formatter -> t -> unit
@@ -81,7 +81,7 @@ module Hash : sig
 
   (** [of_string s] is [Ok v] if [s] is a valid hash, otherwise it is [Error e].
       A hash is valid if it's made of 40 hexadecimal characters. *)
-  val of_string : string -> (t, string) Result.t
+  val of_string : string -> (t, string) result
 
   (** [pp fmt v] prints [v] on formatter [fmt]. *)
   val pp : Format.formatter -> t -> unit
@@ -109,7 +109,7 @@ module Core_identifier : sig
 
   (** [of_string s] is [Ok v] if [s] is a valid core identifier, otherwise it is
       [Error e]. *)
-  val of_string : string -> (t, string) Result.t
+  val of_string : string -> (t, string) result
 
   (** [mk scheme kind hash] is the core identifier made of the scheme version
       [scheme], the kind [kind] and the hash [hash]. *)
@@ -146,7 +146,7 @@ module Qualifier : sig
 
   (** [of_string s] is [Ok v] if [s] is a valid qualifier, otherwise it is
       [Error e]. *)
-  val of_string : string -> (t, string) Result.t
+  val of_string : string -> (t, string) result
 
   (** [pp fmt v] prints [v] on formatter [fmt]. *)
   val pp : Format.formatter -> t -> unit
@@ -159,7 +159,7 @@ end
 type t
 
 (** [of_string s] is [Ok v] if [s] is a valid swhid, otherwise it is [Error e]. *)
-val of_string : string -> (t, string) Result.t
+val of_string : string -> (t, string) result
 
 (** [mk c q] is the swhid made of the core identifier [c] and the list of
     qualifiers [q]. *)

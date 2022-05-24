@@ -9,7 +9,7 @@ module Scheme_version = struct
     | 1 -> Ok 1
     | invalid -> Error (Format.sprintf "invalid scheme version `%d`" invalid)
 
-  let to_int = Fun.id
+  let to_int x = x
 
   let pp fmt v = Format.fprintf fmt "%d" v
 
@@ -78,7 +78,7 @@ module Hash = struct
       if !len = 40 then Ok s else raise Exit
     with Exit -> Error (Format.sprintf "invalid object hash `%s`" s)
 
-  let to_string = Fun.id
+  let to_string v = v
 
   let pp fmt v = Format.fprintf fmt "%s" v
 end
@@ -91,7 +91,7 @@ module Core_identifier = struct
     let scheme_version = sch_version - sch_version' in
     if scheme_version <> 0 then scheme_version
     else
-      let object_type = Type.compare object_type object_type' in
+      let object_type = Kind.compare object_type object_type' in
       if object_type <> 0 then object_type else Hash.compare hash hash'
 
   let equal t t' = compare t t' = 0
@@ -134,6 +134,8 @@ module Qualifier = struct
     | Visit of Core_identifier.t
     | Fragment of (int * int option)
 
+  let int_of_string_opt s = try Some (int_of_string s) with Failure _ -> None
+
   let of_string s =
     match String.split_on_char '=' s with
     | "lines" :: lines -> begin
@@ -175,14 +177,19 @@ module Qualifier = struct
     | Origin uri -> Format.fprintf fmt "origin=%s" uri
     | Path path -> Format.fprintf fmt "path=%s" path
     | Visit id -> Format.fprintf fmt "visit=%a" Core_identifier.pp id
-    | Fragment (l1, l2) ->
+    | Fragment (l1, l2) -> (
       Format.fprintf fmt "lines=%d" l1;
-      Option.iter (fun l2 -> Format.fprintf fmt "-%d" l2) l2
+      match l2 with None -> () | Some l2 -> Format.fprintf fmt "-%d" l2 )
 
   let to_string q = Format.asprintf "%a" pp q
 end
 
 type t = Core_identifier.t * Qualifier.t list
+
+(* TODO: remove once we have >= 4.05 *)
+let rec list_find_opt p = function
+  | [] -> None
+  | x :: l -> if p x then Some x else list_find_opt p l
 
 let of_string s =
   match String.split_on_char ';' s with
@@ -191,7 +198,7 @@ let of_string s =
     | Error _msg as e -> e
     | Ok object_core_identifier -> begin
       let qualifiers = List.map Qualifier.of_string qualifiers in
-      match List.find_opt Result.is_error qualifiers with
+      match list_find_opt Result.is_error qualifiers with
       | Some (Error _msg as e) -> e
       | Some _ -> assert false
       | None ->

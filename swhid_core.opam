@@ -8,26 +8,14 @@ authors: [
   "Léo Andrès <contact@ndrs.fr>, Dario Pinto <dario.pinto@ocamlpro.com>"
 ]
 license: "ISC"
-tags: [
-  "swhid_core"
-  "swhid"
-  "swh"
-  "persistent"
-  "identifiers"
-  "hash"
-  "software"
-  "heritage"
-  "archive"
-]
 homepage: "https://github.com/ocamlpro/swhid_core"
 bug-reports: "https://github.com/ocamlpro/swhid_core/issues"
 depends: [
-  "dune" {>= "2.9"}
-  "ocaml" {>= "4.08"}
-  "odoc" {with-doc}
+  "ocaml" {>= "4.04"}
+  "dune" {>= "1.11"}
 ]
 build: [
-  ["dune" "subst"] {dev}
+  ["dune" "subst"] {pinned}
   [
     "dune"
     "build"
@@ -35,11 +23,9 @@ build: [
     name
     "-j"
     jobs
-    "--promote-install-files=false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
-  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/ocamlpro/swhid_core.git"
