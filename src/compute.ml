@@ -59,8 +59,20 @@ struct
     let object_from_contents target_kind contents =
       object_from_contents_strtarget (target_kind_to_git target_kind) contents
 
+    (* TODO: remove once we have > 4.03 *)
+    let string_split_on_char sep s =
+      let r = ref [] in
+      let j = ref (String.length s) in
+      for i = String.length s - 1 downto 0 do
+        if String.unsafe_get s i = sep then begin
+          r := String.sub s (i + 1) (!j - i - 1) :: !r;
+          j := i
+        end
+      done;
+      String.sub s 0 !j :: !r
+
     let escape_newlines snippet =
-      String.concat "\n " (String.split_on_char '\n' snippet)
+      String.concat "\n " (string_split_on_char '\n' snippet)
 
     (* TODO: replace with Int.abs when we have >= 4.08 *)
     let abs x = if x >= 0 then x else -x

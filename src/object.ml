@@ -83,6 +83,18 @@ module Hash = struct
   let pp fmt v = Format.fprintf fmt "%s" v
 end
 
+(* TODO: remove once we have > 4.03 *)
+let string_split_on_char sep s =
+  let r = ref [] in
+  let j = ref (String.length s) in
+  for i = String.length s - 1 downto 0 do
+    if String.unsafe_get s i = sep then begin
+      r := String.sub s (i + 1) (!j - i - 1) :: !r;
+      j := i
+    end
+  done;
+  String.sub s 0 !j :: !r
+
 module Core_identifier = struct
   type t = Scheme_version.t * Kind.t * Hash.t
 
@@ -97,7 +109,7 @@ module Core_identifier = struct
   let equal t t' = compare t t' = 0
 
   let of_string s =
-    match String.split_on_char ':' s with
+    match string_split_on_char ':' s with
     | [ "swh"; "1"; t; hash ] -> begin
       match Kind.of_string t with
       | Error _msg as e -> e
@@ -137,9 +149,9 @@ module Qualifier = struct
   let int_of_string_opt s = try Some (int_of_string s) with Failure _ -> None
 
   let of_string s =
-    match String.split_on_char '=' s with
+    match string_split_on_char '=' s with
     | "lines" :: lines -> begin
-      match String.split_on_char '-' (String.concat "" lines) with
+      match string_split_on_char '-' (String.concat "" lines) with
       | [ l1 ] -> begin
         match int_of_string_opt l1 with
         | None -> Error "invalid qualifier"
@@ -192,7 +204,7 @@ let rec list_find_opt p = function
   | x :: l -> if p x then Some x else list_find_opt p l
 
 let of_string s =
-  match String.split_on_char ';' s with
+  match string_split_on_char ';' s with
   | id :: qualifiers -> begin
     match Core_identifier.of_string id with
     | Error _msg as e -> e

@@ -35,6 +35,7 @@
    archive))
  (depends
   (ocaml
-   (>= 4.04))
+   (>= 4.03))
   (dune
-   (>= 1.11))))
+   (>= 1.11))
+  (odoc :with-doc)))
