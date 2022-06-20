@@ -1,3 +1,8 @@
+(* TODO: remove once we have >= 4.08 *)
+let result_is_error = function Ok _v -> false | Error _v -> true
+let result_get_ok = function Ok v -> v | Error _v -> invalid_arg "Result.get_ok"
+
+
 module Scheme_version = struct
   type t = int
 
@@ -210,11 +215,11 @@ let of_string s =
     | Error _msg as e -> e
     | Ok object_core_identifier -> begin
       let qualifiers = List.map Qualifier.of_string qualifiers in
-      match list_find_opt Result.is_error qualifiers with
+      match list_find_opt result_is_error qualifiers with
       | Some (Error _msg as e) -> e
       | Some _ -> assert false
       | None ->
-        let qualifiers = List.map Result.get_ok qualifiers in
+        let qualifiers = List.map result_get_ok qualifiers in
         Ok (object_core_identifier, qualifiers)
     end
   end

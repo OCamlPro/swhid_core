@@ -1,3 +1,7 @@
+(* TODO: remove once we get >= 4.08 *)
+let result_is_error = function Ok _v -> false | Error _v -> true
+let result_get_ok = function Ok v -> v | Error _v -> invalid_arg "Result.get_ok"
+
 type directory_entry_kind =
   | File
   | Dir
@@ -170,10 +174,10 @@ struct
             | _ -> Error "can't compute directory deep identifier" )
           contents
       in
-      match list_find_opt Result.is_error entries with
+      match list_find_opt result_is_error entries with
       | Some (Error _ as e) -> e
       | Some _ -> assert false
-      | None -> directory_identifier (List.map Result.get_ok entries) )
+      | None -> directory_identifier (List.map result_get_ok entries) )
 
   (* TODO: remove once we have >= 4.08 *)
   let option_map f = function None -> None | Some v -> Some (f v)
