@@ -9,7 +9,7 @@
 (license ISC)
 
 (authors
- "Léo Andrès <contact@ndrs.fr>, Dario Pinto <dario.pinto@ocamlpro.com>")
+ "Léo Andrès <contact@ndrs.fr>" "Dario Pinto <dario.pinto@ocamlpro.com>")
 
 (maintainers "Léo Andrès <contact@ndrs.fr>")
 
@@ -20,7 +20,7 @@
 
 (package
  (name swhid_core)
- (synopsis "OCaml library to work with swhids.")
+ (synopsis "OCaml library to work with swhids")
  (description
   "swhid_core is an OCaml library to with with Software Heritage persistent identifiers (swhids). This is the core library, for most use cases you should use the swhid library instead.")
  (tags
